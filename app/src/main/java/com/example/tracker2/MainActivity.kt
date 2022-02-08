@@ -1,10 +1,15 @@
 package com.example.tracker2
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.hardware.usb.UsbDevice.getDeviceId
+import android.net.wifi.WifiManager
+import android.os.AsyncTask
 import android.os.Bundle
 import android.os.Looper
+import android.util.Log
 import com.google.android.material.tabs.TabLayout
 import androidx.viewpager.widget.ViewPager
 import androidx.appcompat.app.AppCompatActivity
@@ -23,6 +28,13 @@ import com.example.tracker2.ui.main.ItemFragment.Companion.theAdapter
 import com.example.tracker2.ui.main.ItemFragment.Companion.theList
 import com.example.tracker2.ui.main.MainFragment
 import com.google.android.gms.location.*
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONException
+import org.json.JSONObject
+import java.io.IOException
+import kotlin.random.Random
 
 
 class MainActivity : AppCompatActivity() {
@@ -38,13 +50,19 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        UNIQUE_ID = PreferenceManager.getDefaultSharedPreferences(applicationContext).getInt("UNIQUE_ID", -1)
+        if (UNIQUE_ID == -1){
+            UNIQUE_ID = generateUniqueId()
+            PreferenceManager.getDefaultSharedPreferences(applicationContext).edit().putInt("UNIQUE_ID", UNIQUE_ID).apply()
+        }
         isDark = PreferenceManager.getDefaultSharedPreferences(applicationContext).getBoolean("isDark", false)
         if (!isDark)
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         else
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
         LOCATION_REFRESH_TIME = PreferenceManager.getDefaultSharedPreferences(applicationContext).getInt("locationRefreshTime", 500)
-        Toast.makeText(applicationContext, "REFRESH TIME "+ LOCATION_REFRESH_TIME, Toast.LENGTH_LONG).show()
+        //Toast.makeText(applicationContext, "REFRESH TIME "+ LOCATION_REFRESH_TIME, Toast.LENGTH_LONG).show()
+        Toast.makeText(applicationContext, "UNIQUE ID "+ UNIQUE_ID, Toast.LENGTH_LONG).show()
         fragmentMain = MainFragment()
         fragmentList = ItemFragment()
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -73,11 +91,19 @@ class MainActivity : AppCompatActivity() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(p0: LocationResult) {
                 for (location in p0.locations){
+                    latitude = location.latitude
+                    longitude = location.longitude
                     theList.add(0, Pair(theList.size+1, location.toString()))
                     theAdapter.notifyDataSetChanged()
+                    LocationUpdateTask().execute()
                 }
             }
         }
+    }
+
+    private fun generateUniqueId(): Int {
+
+        return Random.nextInt(0, Int.MAX_VALUE)
     }
 
     private fun checkPermission(): Boolean {
@@ -92,9 +118,11 @@ class MainActivity : AppCompatActivity() {
 
     fun toggleService() {
         if (!isLocationServiceRunning){
+            ConnectionTask().execute()
             Toast.makeText(this, "starting location service", Toast.LENGTH_SHORT).show()
             startLocationUpdates()
         } else {
+            DisconnectionTask().execute()
             stopLocationUpdates()
         }
         isLocationServiceRunning = !isLocationServiceRunning
@@ -144,9 +172,124 @@ class MainActivity : AppCompatActivity() {
         stopLocationUpdates()
     }
 
+
+    private class ConnectionTask:
+        AsyncTask<String?, Int?, String>() {
+        override fun doInBackground(vararg p0: String?): String? {
+            var s = ""
+            val json = "{\"uniqueDeviceId\":\""+ UNIQUE_ID+"\"}"
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val requestBody = json.toRequestBody(mediaType)
+            val okHttpClient = OkHttpClient()
+            val request = Request.Builder()
+                .method("POST", requestBody)
+                .url(urlAPI)
+                .build()
+            okHttpClient.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    s = "failure"
+                    Log.d("CONNECTION_FAIL", s)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    val responseData = response.body?.string()
+                    try {
+                        var json1 = JSONObject(responseData)
+                        println("Request Successful!!")
+                        Log.d("CONNECTION_SUCCESS", json1.toString())
+                        Log.d("CONNECTION_SUCCESS", json1.getInt("id").toString())
+                        id=json1.getInt("id")
+                    } catch (e: JSONException) {
+                        e.printStackTrace()
+                    }
+                }
+            })
+            return s
+        }
+    }
+
+
+    private class DisconnectionTask:
+        AsyncTask<String?, Int?, String>() {
+        override fun doInBackground(vararg p0: String?): String? {
+            var s = ""
+            val json = "{}"
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val requestBody = json.toRequestBody(mediaType)
+            val okHttpClient = OkHttpClient()
+            val url = urlAPI+id+"/"
+            val request = Request.Builder()
+                .method("DELETE", requestBody)
+                .url(url)
+                .build()
+            okHttpClient.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    s = "failure"
+                    Log.d("LOGOUT_FAIL", s)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    val responseData = response.body?.string()
+                    try {
+                        var json1 = JSONObject(responseData)
+                        println("Request Successful!!")
+                        Log.d("LOGOUT_SUCCESS", json1.toString())
+                    } catch (e: JSONException) {
+                        e.printStackTrace()
+                    }
+                }
+            })
+            return s
+        }
+    }
+
+
+    private class LocationUpdateTask :
+        AsyncTask<String?, Int?, String>() {
+        override fun doInBackground(vararg p0: String?): String? {
+            var s = ""
+            val id = id
+            val url = urlAPI + id + "/location"
+            val json = "{\"latitude\":$latitude, \"longitude\":$longitude}"
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val requestBody = json.toRequestBody(mediaType)
+            val okHttpClient = OkHttpClient()
+            val request = Request.Builder()
+                .method("POST", requestBody)
+                .url(url)
+                .build()
+            okHttpClient.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    s = "failure"
+                    Log.d("LOCATION_FAIL", s)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    val responseData = response.body?.string()
+                    try {
+                        var json = JSONObject(responseData)
+                        println("Location Request Successful!!")
+                        Log.d("LOCATION_SUCCESS", json.toString())
+                    } catch (e: JSONException) {
+                        e.printStackTrace()
+                    }
+                }
+            })
+            return s
+        }
+    }
+
     companion object {
         var isLocationServiceRunning = false
         var LOCATION_REFRESH_TIME = 500
+        var id = 0
+        var UNIQUE_ID = -1
+        val urlAPI = "https://rtqtybnff0.execute-api.eu-west-3.amazonaws.com/dev/trackers/"
+        var latitude = 0.0
+        var longitude = 0.0
     }
 
 }
+
+
+
