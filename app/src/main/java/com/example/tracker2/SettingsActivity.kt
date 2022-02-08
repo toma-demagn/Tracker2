@@ -13,13 +13,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
-import com.example.tracker2.MainActivity.Companion.LOCATION_REFRESH_TIME
+import com.example.tracker2.MainActivity.Companion.LOCATION_UPDATE_TIME
 
 class SettingsActivity : AppCompatActivity() {
 
     var isDark = false
     lateinit var editText : EditText
-    var locationRefreshTime: Int = LOCATION_REFRESH_TIME
+    var locationRefreshTime: Int = LOCATION_UPDATE_TIME
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,7 +44,7 @@ class SettingsActivity : AppCompatActivity() {
                 } catch (e: NumberFormatException) {
                     // handler
                 } finally {
-                    if (nb>0 && nb != LOCATION_REFRESH_TIME){
+                    if (nb>0 && nb != LOCATION_UPDATE_TIME){
                         locationRefreshTime = nb
                         button.isClickable = true
                     } else
@@ -102,7 +102,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     fun changeValue(v: View){
-        LOCATION_REFRESH_TIME = locationRefreshTime
+        LOCATION_UPDATE_TIME = locationRefreshTime
         PreferenceManager.getDefaultSharedPreferences(applicationContext).edit().putInt("locationRefreshTime", locationRefreshTime).apply()
         v.isClickable = false
         Toast.makeText(this, "Location refresh time updated", Toast.LENGTH_SHORT).show()
