@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
-    lateinit var sectionsPagerAdapter : SectionsPagerAdapter
+    lateinit var sectionsPagerAdapter: SectionsPagerAdapter
     lateinit var fragmentList: ItemFragment
     lateinit var fragmentMain: MainFragment
     private lateinit var binding: ActivityMainBinding
@@ -50,24 +50,29 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        UNIQUE_ID = PreferenceManager.getDefaultSharedPreferences(applicationContext).getInt("UNIQUE_ID", -1)
-        if (UNIQUE_ID == -1){
+        UNIQUE_ID = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+            .getInt("UNIQUE_ID", -1)
+        if (UNIQUE_ID == -1) {
             UNIQUE_ID = generateUniqueId()
-            PreferenceManager.getDefaultSharedPreferences(applicationContext).edit().putInt("UNIQUE_ID", UNIQUE_ID).apply()
+            PreferenceManager.getDefaultSharedPreferences(applicationContext).edit()
+                .putInt("UNIQUE_ID", UNIQUE_ID).apply()
         }
-        isDark = PreferenceManager.getDefaultSharedPreferences(applicationContext).getBoolean("isDark", false)
+        isDark = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+            .getBoolean("isDark", false)
         if (!isDark)
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         else
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-        LOCATION_REFRESH_TIME = PreferenceManager.getDefaultSharedPreferences(applicationContext).getInt("locationRefreshTime", 500)
+        LOCATION_REFRESH_TIME = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+            .getInt("locationRefreshTime", 500)
         //Toast.makeText(applicationContext, "REFRESH TIME "+ LOCATION_REFRESH_TIME, Toast.LENGTH_LONG).show()
-        Toast.makeText(applicationContext, "UNIQUE ID "+ UNIQUE_ID, Toast.LENGTH_LONG).show()
+        Toast.makeText(applicationContext, "UNIQUE ID " + UNIQUE_ID, Toast.LENGTH_LONG).show()
         fragmentMain = MainFragment()
         fragmentList = ItemFragment()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        sectionsPagerAdapter = SectionsPagerAdapter(this, supportFragmentManager, fragmentMain, fragmentList)
+        sectionsPagerAdapter =
+            SectionsPagerAdapter(this, supportFragmentManager, fragmentMain, fragmentList)
         val viewPager: ViewPager = binding.viewPager
         viewPager.adapter = sectionsPagerAdapter
         val tabs: TabLayout = binding.tabs
@@ -90,10 +95,10 @@ class MainActivity : AppCompatActivity() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(p0: LocationResult) {
-                for (location in p0.locations){
+                for (location in p0.locations) {
                     latitude = location.latitude
                     longitude = location.longitude
-                    theList.add(0, Pair(theList.size+1, location.toString()))
+                    theList.add(0, Pair(theList.size + 1, location.toString()))
                     theAdapter.notifyDataSetChanged()
                     LocationUpdateTask().execute()
                 }
@@ -107,17 +112,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkPermission(): Boolean {
-        val result = ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.ACCESS_FINE_LOCATION)
-        val result1 = ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.ACCESS_COARSE_LOCATION)
+        val result = ContextCompat.checkSelfPermission(
+            applicationContext,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+        val result1 = ContextCompat.checkSelfPermission(
+            applicationContext,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
         return result == PackageManager.PERMISSION_GRANTED && result1 == PackageManager.PERMISSION_GRANTED
     }
 
     private fun requestPermission() {
-        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 1)
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ),
+            1
+        )
     }
 
     fun toggleService() {
-        if (!isLocationServiceRunning){
+        if (!isLocationServiceRunning) {
             ConnectionTask().execute()
             Toast.makeText(this, "starting location service", Toast.LENGTH_SHORT).show()
             startLocationUpdates()
@@ -156,9 +174,11 @@ class MainActivity : AppCompatActivity() {
             .setMaxWaitTime(0)
             .setSmallestDisplacement(0f)
             .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-        fusedLocationClient.requestLocationUpdates(currentLocationRequest,
+        fusedLocationClient.requestLocationUpdates(
+            currentLocationRequest,
             locationCallback,
-            Looper.getMainLooper())
+            Looper.getMainLooper()
+        )
     }
 
     override fun onResume() {
@@ -173,11 +193,11 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private class ConnectionTask:
+    private class ConnectionTask :
         AsyncTask<String?, Int?, String>() {
         override fun doInBackground(vararg p0: String?): String? {
             var s = ""
-            val json = "{\"uniqueDeviceId\":\""+ UNIQUE_ID+"\"}"
+            val json = "{\"uniqueDeviceId\":\"" + UNIQUE_ID + "\"}"
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val requestBody = json.toRequestBody(mediaType)
             val okHttpClient = OkHttpClient()
@@ -198,7 +218,7 @@ class MainActivity : AppCompatActivity() {
                         println("Request Successful!!")
                         Log.d("CONNECTION_SUCCESS", json1.toString())
                         Log.d("CONNECTION_SUCCESS", json1.getInt("id").toString())
-                        id=json1.getInt("id")
+                        id = json1.getInt("id")
                     } catch (e: JSONException) {
                         e.printStackTrace()
                     }
@@ -209,7 +229,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private class DisconnectionTask:
+    private class DisconnectionTask :
         AsyncTask<String?, Int?, String>() {
         override fun doInBackground(vararg p0: String?): String? {
             var s = ""
@@ -217,7 +237,7 @@ class MainActivity : AppCompatActivity() {
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val requestBody = json.toRequestBody(mediaType)
             val okHttpClient = OkHttpClient()
-            val url = urlAPI+id+"/"
+            val url = urlAPI + id + "/"
             val request = Request.Builder()
                 .method("DELETE", requestBody)
                 .url(url)
