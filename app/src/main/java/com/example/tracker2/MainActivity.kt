@@ -3,7 +3,6 @@ package com.example.tracker2
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.AsyncTask
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -45,6 +44,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     var isDark = false
     lateinit var handlerUpdate: Handler
+    var locationCount = 0
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,9 +98,13 @@ class MainActivity : AppCompatActivity() {
                 for (location in p0.locations) {
                     latitude = location.latitude
                     longitude = location.longitude
-                    theList.add(0, Pair(theList.size + 1, location.toString()))
+                    theList.add(0, Pair(locationCount, location.toString()))
+                    if (theList.size > 40) {
+                        theList.removeAt(theList.size - 1)
+                    }
                     theAdapter.notifyDataSetChanged()
-                    LocationUpdateTask().execute()
+                    //LocationUpdateTask().execute()
+                    locationCount++
                 }
             }
         }
@@ -109,7 +113,7 @@ class MainActivity : AppCompatActivity() {
     private val runnableCode: Runnable = object : Runnable {
         override fun run() {
             Toast.makeText(applicationContext, "Ok service is running", Toast.LENGTH_SHORT).show()
-            LocationUpdateTask().execute()
+            updateLocationRequest()
             handlerUpdate.postDelayed(this, LOCATION_UPDATE_TIME.toLong())
         }
     }
@@ -143,14 +147,14 @@ class MainActivity : AppCompatActivity() {
 
     fun toggleService() {
         if (!isLocationServiceRunning) {
-            ConnectionTask().execute()
+            connect()
             Toast.makeText(this, "starting location service", Toast.LENGTH_SHORT).show()
             startLocationUpdates()
-            //handlerUpdate.post(runnableCode)
+            handlerUpdate.post(runnableCode)
         } else {
-            DisconnectionTask().execute()
+            disconnect()
             stopLocationUpdates()
-            //handlerUpdate.removeCallbacks(runnableCode)
+            handlerUpdate.removeCallbacks(runnableCode)
         }
         isLocationServiceRunning = !isLocationServiceRunning
     }
@@ -202,117 +206,94 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private class ConnectionTask :
-        AsyncTask<String?, Int?, String>() {
-        override fun doInBackground(vararg p0: String?): String? {
-            var s = ""
-            val json = "{\"uniqueDeviceId\":\"" + UNIQUE_ID + "\"}"
-            val mediaType = "application/json; charset=utf-8".toMediaType()
-            val requestBody = json.toRequestBody(mediaType)
-            val okHttpClient = OkHttpClient()
-            val request = Request.Builder()
-                .method("POST", requestBody)
-                .url(urlAPI)
-                .build()
-            okHttpClient.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    s = "failure"
-                    Log.d("CONNECTION_FAIL", s)
-                }
+    private fun connect(){
+        val json = "{\"uniqueDeviceId\":\"" + UNIQUE_ID + "\"}"
+        val mediaType = "application/json; charset=utf-8".toMediaType()
+        val requestBody = json.toRequestBody(mediaType)
+        val request = Request.Builder()
+            .method("POST", requestBody)
+            .url(urlAPI)
+            .build()
+        okHttpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.d("LOCATION_FAIL", "This is a failure")
+            }
 
-                override fun onResponse(call: Call, response: Response) {
-                    val responseData = response.body?.string()
-                    try {
-                        var json1 = JSONObject(responseData)
-                        println("Request Successful!!")
-                        Log.d("CONNECTION_SUCCESS", json1.toString())
-                        Log.d("CONNECTION_SUCCESS", json1.getInt("id").toString())
-                        id = json1.getInt("id")
-                    } catch (e: JSONException) {
-                        e.printStackTrace()
-                    }
+            override fun onResponse(call: Call, response: Response) {
+                val responseData = response.body?.string()
+                try {
+                    var json1 = JSONObject(responseData)
+                    println("Request Successful!!")
+                    Log.d("CONNECTION_SUCCESS", json1.toString())
+                    Log.d("CONNECTION_SUCCESS", json1.getInt("id").toString())
+                    id = json1.getInt("id")
+                } catch (e: JSONException) {
+                    e.printStackTrace()
                 }
-            })
-            return s
-        }
+            }
+        })
     }
 
+    private fun disconnect(){
+        val json = "{}"
+        val mediaType = "application/json; charset=utf-8".toMediaType()
+        val requestBody = json.toRequestBody(mediaType)
+        val url = urlAPI + id + "/"
+        val request = Request.Builder()
+            .method("DELETE", requestBody)
+            .url(url)
+            .build()
+        okHttpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.d("LOCATION_FAIL", "This is a failure")
+            }
 
-    private class DisconnectionTask :
-        AsyncTask<String?, Int?, String>() {
-        override fun doInBackground(vararg p0: String?): String? {
-            var s = ""
-            val json = "{}"
+            override fun onResponse(call: Call, response: Response) {
+                val responseData = response.body?.string()
+                try {
+                    var json1 = JSONObject(responseData)
+                    println("Request Successful!!")
+                    Log.d("LOGOUT_SUCCESS", json1.toString())
+                } catch (e: JSONException) {
+                    e.printStackTrace()
+                }
+            }
+        })
+    }
+
+    private fun updateLocationRequest() {
+        val id = id
+        if (id>0){
+            val url = urlAPI + id + "/location"
+            val json = "{\"latitude\":$latitude, \"longitude\":$longitude}"
+            Log.d("JSON Location", json)
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val requestBody = json.toRequestBody(mediaType)
-            val okHttpClient = OkHttpClient()
-            val url = urlAPI + id + "/"
             val request = Request.Builder()
-                .method("DELETE", requestBody)
+                .method("POST", requestBody)
                 .url(url)
                 .build()
             okHttpClient.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    s = "failure"
-                    Log.d("LOGOUT_FAIL", s)
+                    Log.d("LOCATION_FAIL", "This is a failure")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
                     val responseData = response.body?.string()
                     try {
-                        var json1 = JSONObject(responseData)
-                        println("Request Successful!!")
-                        Log.d("LOGOUT_SUCCESS", json1.toString())
+                        var json = JSONObject(responseData)
+                        println("Location Request Successful!!")
+                        Log.d("LOCATION_SUCCESS", json.toString())
                     } catch (e: JSONException) {
                         e.printStackTrace()
                     }
                 }
             })
-            return s
-        }
-    }
-
-
-    private class LocationUpdateTask :
-        AsyncTask<String?, Int?, String>() {
-        override fun doInBackground(vararg p0: String?): String? {
-            var s = ""
-            val id = id
-            if (id>0){
-                val url = urlAPI + id + "/location"
-                val json = "{\"latitude\":$latitude, \"longitude\":$longitude}"
-                Log.d("JSON Location", json)
-                val mediaType = "application/json; charset=utf-8".toMediaType()
-                val requestBody = json.toRequestBody(mediaType)
-                val okHttpClient = OkHttpClient()
-                val request = Request.Builder()
-                    .method("POST", requestBody)
-                    .url(url)
-                    .build()
-                okHttpClient.newCall(request).enqueue(object : Callback {
-                    override fun onFailure(call: Call, e: IOException) {
-                        s = "failure"
-                        Log.d("LOCATION_FAIL", s)
-                    }
-
-                    override fun onResponse(call: Call, response: Response) {
-                        val responseData = response.body?.string()
-                        try {
-                            var json = JSONObject(responseData)
-                            println("Location Request Successful!!")
-                            Log.d("LOCATION_SUCCESS", json.toString())
-                        } catch (e: JSONException) {
-                            e.printStackTrace()
-                        }
-                    }
-                })
-            }
-
-            return s
         }
     }
 
     companion object {
+        val okHttpClient = OkHttpClient()
         var isLocationServiceRunning = false
         var LOCATION_UPDATE_TIME = 500
         var LOCATION_REFRESH_TIME = 100
