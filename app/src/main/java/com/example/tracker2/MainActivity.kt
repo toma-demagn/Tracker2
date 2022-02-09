@@ -1,7 +1,11 @@
 package com.example.tracker2
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.ContentValues.TAG
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
@@ -41,6 +45,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var sectionsPagerAdapter: SectionsPagerAdapter
     lateinit var fragmentList: ItemFragment
     lateinit var fragmentMain: MainFragment
+    lateinit var fragmentCode: CodeFragment
     private lateinit var binding: ActivityMainBinding
     var isDark = false
     lateinit var handlerUpdate: Handler
@@ -69,10 +74,11 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(applicationContext, "UNIQUE ID " + UNIQUE_ID, Toast.LENGTH_LONG).show()
         fragmentMain = MainFragment()
         fragmentList = ItemFragment()
+        fragmentCode = CodeFragment()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         sectionsPagerAdapter =
-            SectionsPagerAdapter(this, supportFragmentManager, fragmentMain, fragmentList)
+            SectionsPagerAdapter(this, supportFragmentManager, fragmentMain, fragmentList, fragmentCode)
         val viewPager: ViewPager = binding.viewPager
         viewPager.adapter = sectionsPagerAdapter
         val tabs: TabLayout = binding.tabs
@@ -108,11 +114,14 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+        val filter = IntentFilter("show")
+        val br = MyBroadcastReceiver()
+        registerReceiver(br, filter)
     }
 
     private val runnableCode: Runnable = object : Runnable {
         override fun run() {
-            Toast.makeText(applicationContext, "Ok service is running", Toast.LENGTH_SHORT).show()
+            //Toast.makeText(applicationContext, "Ok service is running", Toast.LENGTH_SHORT).show()
             updateLocationRequest()
             handlerUpdate.postDelayed(this, LOCATION_UPDATE_TIME.toLong())
         }
@@ -289,6 +298,15 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             })
+        }
+    }
+
+    private val TAG = "MyBroadcastReceiver"
+
+    class MyBroadcastReceiver : BroadcastReceiver() {
+
+        override fun onReceive(context: Context, intent: Intent) {
+            Toast.makeText(context, intent.getStringExtra("msg"), Toast.LENGTH_LONG).show()
         }
     }
 
