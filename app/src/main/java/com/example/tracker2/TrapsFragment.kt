@@ -9,7 +9,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
-import android.widget.Toast
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
@@ -27,10 +26,10 @@ private const val ARG_PARAM2 = "param2"
 
 /**
  * A simple [Fragment] subclass.
- * Use the [CodeFragment.newInstance] factory method to
+ * Use the [TrapsFragment.newInstance] factory method to
  * create an instance of this fragment.
  */
-class CodeFragment : Fragment() {
+class TrapsFragment : Fragment() {
     // TODO: Rename and change types of parameters
     private var param1: String? = null
     private var param2: String? = null
@@ -47,41 +46,45 @@ class CodeFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view = inflater.inflate(R.layout.fragment_code, container, false)
+        val view = inflater.inflate(R.layout.fragment_traps, container, false)
         val buttonSubmit = view.findViewById<Button>(R.id.btnSubmit)
-        val textField = view.findViewById<EditText>(R.id.editTextTextPersonName)
+        buttonSubmit.isClickable = MainActivity.isLocationServiceRunning
         buttonSubmit.setOnClickListener(View.OnClickListener {
-            val code = textField.text.toString()
-            sendCode(code)
+            sendCode()
         })
 
         return view
     }
 
-    private fun sendCode(code: String) {
+    private fun sendCode() {
         val id = MainActivity.id
         if (id>0){
             val url = "https://rtqtybnff0.execute-api.eu-west-3.amazonaws.com/dev/traps"
-            val json = "{\"code\":\"$code\", \"trackerId\":${MainActivity.id}}"
+            val json = "{\"trackerId\":${MainActivity.id}}"
             Log.d("JSON CODE", json)
             Log.d("URL CODE", url)
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val requestBody = json.toRequestBody(mediaType)
             val request = Request.Builder()
-                .method("PATCH", requestBody)
+                .method("POST", requestBody)
                 .url(url)
                 .build()
             MainActivity.okHttpClient.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    Log.d("CODE_FAIL", "This is a failure")
+                    Log.d("TRAP_FAIL", "This is a failure")
+                    Intent().also { intent ->
+                        intent.setAction("show")
+                        intent.putExtra("msg", "Erreur dans l'ajout de piège transmise")
+                        context?.sendBroadcast(intent)
+                    }
                 }
 
                 override fun onResponse(call: Call, response: Response) {
                     val responseData = response.body?.string()
                     try {
                         var json = JSONObject(responseData)
-                        println("Code Request Successful!!")
-                        Log.d("CODE_SUCCESS", json.toString())
+                        println("Trap Request Successful!!")
+                        Log.d("TRAP_SUCCESS", json.toString())
                         //Toast.makeText(context, json.toString(), Toast.LENGTH_LONG).show()
                         Intent().also { intent ->
                             intent.setAction("show")
@@ -108,7 +111,7 @@ class CodeFragment : Fragment() {
         // TODO: Rename and change types and number of parameters
         @JvmStatic
         fun newInstance(param1: String, param2: String) =
-            CodeFragment().apply {
+            TrapsFragment().apply {
                 arguments = Bundle().apply {
                     putString(ARG_PARAM1, param1)
                     putString(ARG_PARAM2, param2)

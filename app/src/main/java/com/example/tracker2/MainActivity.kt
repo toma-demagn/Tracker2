@@ -2,7 +2,6 @@ package com.example.tracker2
 
 import android.Manifest
 import android.content.BroadcastReceiver
-import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -45,7 +44,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var sectionsPagerAdapter: SectionsPagerAdapter
     lateinit var fragmentList: ItemFragment
     lateinit var fragmentMain: MainFragment
-    lateinit var fragmentCode: CodeFragment
+    lateinit var fragmentCode: TrapsFragment
     private lateinit var binding: ActivityMainBinding
     var isDark = false
     lateinit var handlerUpdate: Handler
@@ -74,7 +73,7 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(applicationContext, "UNIQUE ID " + UNIQUE_ID, Toast.LENGTH_LONG).show()
         fragmentMain = MainFragment()
         fragmentList = ItemFragment()
-        fragmentCode = CodeFragment()
+        fragmentCode = TrapsFragment()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         sectionsPagerAdapter =

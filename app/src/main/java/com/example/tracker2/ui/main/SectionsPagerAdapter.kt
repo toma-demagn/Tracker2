@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentPagerAdapter
-import com.example.tracker2.CodeFragment
+import com.example.tracker2.TrapsFragment
 import com.example.tracker2.R
 
 private val TAB_TITLES = arrayOf(
@@ -18,7 +18,7 @@ private val TAB_TITLES = arrayOf(
  * one of the sections/tabs/pages.
  */
 class SectionsPagerAdapter(private val context: Context, fm: FragmentManager,
-                           var mf: MainFragment, var ifr: ItemFragment, var cf: CodeFragment
+                           var mf: MainFragment, var ifr: ItemFragment, var cf: TrapsFragment
 ) :
     FragmentPagerAdapter(fm) {
 
