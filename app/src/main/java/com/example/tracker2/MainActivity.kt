@@ -53,7 +53,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        handlerUpdate = Handler()
+        handlerUpdate = Handler() // deprecated but no other option
         UNIQUE_ID = PreferenceManager.getDefaultSharedPreferences(applicationContext)
             .getInt("UNIQUE_ID", -1)
         if (UNIQUE_ID == -1) {
