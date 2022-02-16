@@ -48,7 +48,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     var isDark = false
     lateinit var handlerUpdate: Handler
-    var locationCount = 0
+    var locationCount = 0 // bit useless
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
