@@ -1,23 +1,25 @@
 package com.example.tracker2
 
 import android.Manifest
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.app.AlertDialog
+import android.app.Dialog
+import android.content.*
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.View
+import android.view.Window
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
 import androidx.viewpager.widget.ViewPager
 import com.example.tracker2.databinding.ActivityMainBinding
@@ -55,11 +57,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         handlerUpdate = Handler() // deprecated but no other option
         UNIQUE_ID = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-            .getInt("UNIQUE_ID", -1)
-        if (UNIQUE_ID == -1) {
-            UNIQUE_ID = generateUniqueId()
+            .getString("UNIQUE_ID", "").toString()
+        if (UNIQUE_ID == "") {
+            changeUniqueId()
             PreferenceManager.getDefaultSharedPreferences(applicationContext).edit()
-                .putInt("UNIQUE_ID", UNIQUE_ID).apply()
+                .putString("UNIQUE_ID", UNIQUE_ID).apply()
         }
         isDark = PreferenceManager.getDefaultSharedPreferences(applicationContext)
             .getBoolean("isDark", false)
@@ -300,6 +302,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun changeUniqueId() {
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setCancelable(false)
+        dialog.setContentView(R.layout.dialog_for_id)
+        val textId = dialog.findViewById(R.id.textId) as EditText
+        val yesBtn = dialog.findViewById(R.id.yesBtn) as Button
+        yesBtn.setOnClickListener {
+            val str = textId.text.toString()
+            if (str.length > 0) {
+                UNIQUE_ID = str
+                PreferenceManager.getDefaultSharedPreferences(applicationContext).edit().putString("UNIQUE_ID", UNIQUE_ID).apply()
+                dialog.dismiss()
+            } else
+                Toast.makeText(this, "ID must not be null", Toast.LENGTH_SHORT).show()
+        }
+        dialog.show()
+    }
+
     private val TAG = "MyBroadcastReceiver"
 
     class MyBroadcastReceiver : BroadcastReceiver() {
@@ -315,7 +336,7 @@ class MainActivity : AppCompatActivity() {
         var LOCATION_UPDATE_TIME = 500
         var LOCATION_REFRESH_TIME = 100
         var id = 0
-        var UNIQUE_ID = -1
+        var UNIQUE_ID = ""
         val urlAPI = "https://rtqtybnff0.execute-api.eu-west-3.amazonaws.com/dev/trackers/"
         var latitude = 0.0
         var longitude = 0.0

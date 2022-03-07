@@ -14,18 +14,23 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import com.example.tracker2.MainActivity.Companion.LOCATION_UPDATE_TIME
+import com.example.tracker2.MainActivity.Companion.UNIQUE_ID
 
 class SettingsActivity : AppCompatActivity() {
 
+    var uniqueId: String = UNIQUE_ID
     var isDark = false
     lateinit var editText : EditText
+    lateinit var editText2: EditText
     var locationRefreshTime: Int = LOCATION_UPDATE_TIME
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.settings_activity)
         val button = findViewById<Button>(R.id.validate)
+        val button2 = findViewById<Button>(R.id.validateId)
         button.isClickable = false
+        button2.isClickable = false
         editText = findViewById(R.id.editTextNumber)
         editText.setText(locationRefreshTime.toString())
         editText.addTextChangedListener(object : TextWatcher {
@@ -54,6 +59,31 @@ class SettingsActivity : AppCompatActivity() {
             }
         })
         editText.clearFocus()
+        editText2 = findViewById(R.id.editTextId)
+        editText2.setText(UNIQUE_ID)
+        editText2.addTextChangedListener(object : TextWatcher {
+
+            override fun afterTextChanged(s: Editable) {}
+
+            override fun beforeTextChanged(
+                s: CharSequence, start: Int,
+                count: Int, after: Int
+            ) {
+            }
+
+            override fun onTextChanged(
+                s: CharSequence, start: Int,
+                before: Int, count: Int
+            ) {
+                val str = editText2.text.toString()
+                if (str.length > 0 && str != UNIQUE_ID) {
+                    uniqueId = str
+                    button2.isClickable = true
+                } else
+                    button2.isClickable = false
+            }
+        })
+        editText2.clearFocus()
         isDark = intent.getBooleanExtra("isDark", false)
         val sw1 = findViewById<Switch>(R.id.switch1)
         sw1.isChecked = isDark
@@ -106,6 +136,13 @@ class SettingsActivity : AppCompatActivity() {
         PreferenceManager.getDefaultSharedPreferences(applicationContext).edit().putInt("locationRefreshTime", locationRefreshTime).apply()
         v.isClickable = false
         Toast.makeText(this, "Location refresh time updated", Toast.LENGTH_SHORT).show()
+    }
+
+    fun changeId(v: View){
+        UNIQUE_ID = uniqueId
+        PreferenceManager.getDefaultSharedPreferences(applicationContext).edit().putString("UNIQUE_ID", UNIQUE_ID).apply()
+        v.isClickable = false
+        Toast.makeText(this, "Unique ID updated", Toast.LENGTH_SHORT).show()
     }
 
 }

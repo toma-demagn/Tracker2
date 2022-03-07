@@ -34,6 +34,27 @@
             />
     </LinearLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <EditText
+            android:id="@+id/editTextId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="50"
+            android:ems="10"
+            android:inputType="number" />
+        <Button
+            android:text="validate"
+            android:id="@+id/validateId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="false"
+            android:onClick="changeId"
+            />
+    </LinearLayout>
+
 
 
     <FrameLayout
